@@ -41,6 +41,36 @@
             opacity: 0.9;
         }
 
+        .stats-banner {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .banner-stat {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            border-radius: 15px;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .banner-stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4ade80;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .banner-stat-label {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
         .games-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -162,6 +192,16 @@
         <header>
             <h1>🎮 Dani01 Studios</h1>
             <p class="subtitle">Awesome Roblox Games</p>
+            <div class="stats-banner">
+                <div class="banner-stat">
+                    <span class="banner-stat-value" id="totalPlayers">0</span>
+                    <span class="banner-stat-label">Players playing our games</span>
+                </div>
+                <div class="banner-stat">
+                    <span class="banner-stat-value" id="totalVisits">0</span>
+                    <span class="banner-stat-label">Total play sessions</span>
+                </div>
+            </div>
         </header>
 
         <div id="gamesContainer" class="games-grid">
