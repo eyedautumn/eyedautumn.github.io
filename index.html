@@ -211,7 +211,7 @@
 
     <script>
         const GROUP_ID = 35203067;
-        const PROXY = 'https://corsproxy.io/?url=';
+        const PROXY = 'https://corsproxy.io/?';
 
         async function fetchGroupGames() {
             try {
@@ -246,6 +246,31 @@
             }
         }
 
+        async function fetchGameThumbnail(universeId) {
+            try {
+                // First get the thumbnail IDs
+                const thumbResponse = await fetch(`${PROXY}https://games.roblox.com/v1/games/${universeId}/media`);
+                const thumbData = await thumbResponse.json();
+                
+                if (thumbData.data && thumbData.data.length > 0) {
+                    const thumbnailIds = thumbData.data
+                        .filter(item => item.assetType === 'Image')
+                        .map(item => item.imageId)
+                        .slice(0, 1);
+                    
+                    if (thumbnailIds.length > 0) {
+                        const response = await fetch(`${PROXY}https://games.roblox.com/v1/games/${universeId}/thumbnails?thumbnailIds=${thumbnailIds.join(',')}&size=768x432&format=Webp&isCircular=false`);
+                        const data = await response.json();
+                        return data.data && data.data[0] ? data.data[0].imageUrl : null;
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('Error fetching game thumbnail:', error);
+                return null;
+            }
+        }
+
         function formatNumber(num) {
             if (num >= 1000000) {
                 return (num / 1000000).toFixed(1) + 'M';
@@ -255,7 +280,7 @@
             return num.toString();
         }
 
-        function createGameCard(game, details, iconUrl) {
+        function createGameCard(game, details, thumbnailUrl) {
             const card = document.createElement('div');
             card.className = 'game-card';
             
@@ -266,7 +291,7 @@
             const fallbackIcon = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22%3E%3Crect fill=%22%23667eea%22 width=%22300%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2220%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo Image%3C/text%3E%3C/svg%3E';
 
             card.innerHTML = `
-                <img src="${iconUrl || fallbackIcon}" 
+                <img src="${thumbnailUrl || fallbackIcon}" 
                      alt="${game.name}" 
                      class="game-thumbnail"
                      onerror="this.src='${fallbackIcon}'">
@@ -298,6 +323,8 @@
 
         async function loadGames() {
             const container = document.getElementById('gamesContainer');
+            const totalPlayersEl = document.getElementById('totalPlayers');
+            const totalVisitsEl = document.getElementById('totalVisits');
             
             try {
                 const games = await fetchGroupGames();
@@ -308,14 +335,27 @@
                 }
 
                 container.innerHTML = '';
+                
+                let totalPlayers = 0;
+                let totalVisits = 0;
 
                 for (const game of games) {
                     const details = await fetchGameDetails(game.id);
-                    const iconUrl = await fetchGameIcon(game.id);
-                    const card = createGameCard(game, details, iconUrl);
+                    const thumbnailUrl = await fetchGameThumbnail(game.id);
+                    const card = createGameCard(game, details, thumbnailUrl);
                     container.appendChild(card);
+                    
+                    if (details) {
+                        totalPlayers += details.playing || 0;
+                        totalVisits += details.visits || 0;
+                    }
+                    
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
+                
+                totalPlayersEl.textContent = formatNumber(totalPlayers);
+                totalVisitsEl.textContent = formatNumber(totalVisits);
+                
             } catch (error) {
                 container.innerHTML = `<div class="error">Error loading games: ${error.message}</div>`;
             }
