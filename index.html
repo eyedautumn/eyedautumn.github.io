@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dani01 Studios - Roblox Games</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            animation: fadeInUp 0.6s ease backwards;
+        }
+
+        .game-card:nth-child(1) { animation-delay: 0.1s; }
+        .game-card:nth-child(2) { animation-delay: 0.2s; }
+        .game-card:nth-child(3) { animation-delay: 0.3s; }
+        .game-card:nth-child(4) { animation-delay: 0.4s; }
+
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-thumbnail {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .game-info {
+            padding: 20px;
+        }
+
+        .game-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #4ade80;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.5em;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Dani01 Studios</h1>
+            <p class="subtitle">Awesome Roblox Games</p>
+        </header>
+
+        <div id="gamesContainer" class="games-grid">
+            <div class="loading pulse">Loading games...</div>
+        </div>
+    </div>
+
+    <script>
+        const GROUP_ID = 35203067;
+        const PROXY = 'https://api.allorigins.win/raw?url=';
+
+        async function fetchGroupGames() {
+            try {
+                const response = await fetch(`${PROXY}https://games.roblox.com/v2/groups/${GROUP_ID}/games?accessFilter=2&limit=50&sortOrder=Asc`);
+                const data = await response.json();
+                return data.data || [];
+            } catch (error) {
+                console.error('Error fetching games:', error);
+                return [];
+            }
+        }
+
+        async function fetchGameDetails(universeId) {
+            try {
+                const response = await fetch(`${PROXY}https://games.roblox.com/v1/games?universeIds=${universeId}`);
+                const data = await response.json();
+                return data.data[0] || null;
+            } catch (error) {
+                console.error('Error fetching game details:', error);
+                return null;
+            }
+        }
+
+        async function fetchGameIcon(universeId) {
+            try {
+                const response = await fetch(`${PROXY}https://thumbnails.roblox.com/v1/games/icons?universeIds=${universeId}&returnPolicy=PlaceHolder&size=512x512&format=Webp&isCircular=false`);
+                const data = await response.json();
+                return data.data && data.data[0] ? data.data[0].imageUrl : null;
+            } catch (error) {
+                console.error('Error fetching game icon:', error);
+                return null;
+            }
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        function createGameCard(game, details, iconUrl) {
+            const card = document.createElement('div');
+            card.className = 'game-card';
+            
+            const playing = details?.playing || 0;
+            const visits = details?.visits || 0;
+            const favorites = details?.favoritedCount || 0;
+
+            const fallbackIcon = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22200%22%3E%3Crect fill=%22%23667eea%22 width=%22300%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-size=%2220%22 fill=%22white%22 text-anchor=%22middle%22 dy=%22.3em%22%3ENo Image%3C/text%3E%3C/svg%3E';
+
+            card.innerHTML = `
+                <img src="${iconUrl || fallbackIcon}" 
+                     alt="${game.name}" 
+                     class="game-thumbnail"
+                     onerror="this.src='${fallbackIcon}'">
+                <div class="game-info">
+                    <div class="game-title">${game.name}</div>
+                    <div class="game-stats">
+                        <div class="stat">
+                            <span class="stat-label">Playing</span>
+                            <span class="stat-value">👥 ${formatNumber(playing)}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Visits</span>
+                            <span class="stat-value">🎯 ${formatNumber(visits)}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Favorites</span>
+                            <span class="stat-value">⭐ ${formatNumber(favorites)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            card.addEventListener('click', () => {
+                window.open(`https://www.roblox.com/games/${game.rootPlace.id}`, '_blank');
+            });
+
+            return card;
+        }
+
+        async function loadGames() {
+            const container = document.getElementById('gamesContainer');
+            
+            try {
+                const games = await fetchGroupGames();
+                
+                if (games.length === 0) {
+                    container.innerHTML = '<div class="error">No games found or unable to load games.</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                for (const game of games) {
+                    const details = await fetchGameDetails(game.id);
+                    const iconUrl = await fetchGameIcon(game.id);
+                    const card = createGameCard(game, details, iconUrl);
+                    container.appendChild(card);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error loading games: ${error.message}</div>`;
+            }
+        }
+
+        loadGames();
+        setInterval(loadGames, 60000);
+    </script>
+</body>
+</html>
