@@ -352,41 +352,59 @@ async function fetchGameThumbnail(universeId) {
             const totalPlayersEl = document.getElementById('totalPlayers');
             const totalVisitsEl = document.getElementById('totalVisits');
             
+            container.innerHTML = '<div class="loading pulse">Loading games...</div>';
+
             try {
+                // 1. Fetch the initial list of games from the group
                 const games = await fetchGroupGames();
                 
                 if (games.length === 0) {
                     container.innerHTML = '<div class="error">No games found or unable to load games.</div>';
                     return;
                 }
+                
+                // 2. Fetch all details and thumbnails concurrently for speed
+                const gameDataPromises = games.map(async (game) => {
+                    // Fetch details and thumbnail at the same time for each game
+                    const [details, thumbnailUrl] = await Promise.all([
+                        fetchGameDetails(game.id),
+                        fetchGameThumbnail(game.id)
+                    ]);
+                    return { game, details, thumbnailUrl };
+                });
+                
+                let allGameData = await Promise.all(gameDataPromises);
 
+                // Filter out any games where fetching details failed
+                allGameData = allGameData.filter(data => data.details);
+
+                // 3. SORT the games by player count (CCU) in descending order
+                allGameData.sort((a, b) => (b.details?.playing || 0) - (a.details?.playing || 0));
+
+                // Clear the container before adding sorted games
                 container.innerHTML = '';
                 
                 let totalPlayers = 0;
                 let totalVisits = 0;
 
-                for (const game of games) {
-                    const details = await fetchGameDetails(game.id);
-                    const thumbnailUrl = await fetchGameThumbnail(game.id);
-                    const card = createGameCard(game, details, thumbnailUrl);
+                // 4. Render the sorted games and calculate totals
+                for (const data of allGameData) {
+                    const card = createGameCard(data.game, data.details, data.thumbnailUrl);
                     container.appendChild(card);
                     
-                    if (details) {
-                        totalPlayers += details.playing || 0;
-                        totalVisits += details.visits || 0;
-                    }
-                    
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    totalPlayers += data.details.playing || 0;
+                    totalVisits += data.details.visits || 0;
                 }
                 
+                // Update the banner stats
                 totalPlayersEl.textContent = formatNumber(totalPlayers);
                 totalVisitsEl.textContent = formatNumber(totalVisits);
                 
             } catch (error) {
-                container.innerHTML = `<div class="error">Error loading games: ${error.message}</div>`;
+                console.error("Failed to load and render games:", error);
+                container.innerHTML = `<div class="error">An error occurred: ${error.message}</div>`;
             }
         }
-
         loadGames();
         setInterval(loadGames, 60000);
     </script>
