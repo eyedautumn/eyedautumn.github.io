@@ -367,7 +367,7 @@ async function fetchGameThumbnail(universeId) {
 
                 for (const game of games) {
                     const details = await fetchGameDetails(game.id);
-                    const thumbnailUrl = await fetchGameThumbnail(game.id);
+                    const thumbnailUrl = await fetchGameIcon(game.id);
                     const card = createGameCard(game, details, thumbnailUrl);
                     container.appendChild(card);
                     
