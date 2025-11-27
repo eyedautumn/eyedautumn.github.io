@@ -103,9 +103,12 @@
 
                 const firstImageEntry = mediaJson.data.find((item) => item.assetType === "Image" && item.approved);
                 if (!firstImageEntry?.imageId) return null;
-                
                 const imageId = firstImageEntry.imageId;
-                return `https://tr.rbxcdn.com/${imageId}/768/432/Image/Webp`;
+                const imageUrl = `${PROXY}${encodeURIComponent(`https://thumbnails.roblox.com/v1/assets?assetIds=${imageId}&size=768x432&format=Webp&isCircular=false`)}`
+                const imageResult = await fetch(imageUrl)
+                const jsonResult = await imageResult.json();
+                
+                return jsonResult.imageUrl
             } catch (err) {
                 console.warn("Thumbnail fetch error:", err);
                 return null;
