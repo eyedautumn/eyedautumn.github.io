@@ -13,29 +13,80 @@
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                     },
+                    colors: {
+                        violet: {
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                        }
+                    }
                 }
             }
         }
     </script>
+    <!-- React & ReactDOM UMD -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Framer Motion UMD -->
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
 </head>
-<body class="bg-neutral-950 text-white overflow-x-hidden">
+<body class="bg-neutral-950 text-white overflow-x-hidden selection:bg-violet-500/30">
     <div id="root"></div>
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
-        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
-        import { motion } from 'https://esm.sh/framer-motion@10.16.4';
-        import { Users, MapPin, Heart, Loader2, Gamepad2, AlertCircle } from 'https://esm.sh/lucide-react@0.292.0';
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { motion } = Motion;
 
+        // --- Icons as SVG Components ---
+        const UsersIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        );
+
+        const MapPinIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+            </svg>
+        );
+
+        const HeartIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+            </svg>
+        );
+
+        const GamepadIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="6" x2="10" y1="12" y2="12"/>
+                <line x1="8" x2="8" y1="10" y2="14"/>
+                <line x1="15" x2="15.01" y1="13" y2="13"/>
+                <line x1="18" x2="18.01" y1="11" y2="11"/>
+                <rect width="20" height="12" x="2" y="6" rx="2"/>
+            </svg>
+        );
+
+        const AlertCircleIcon = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" x2="12" y1="8" y2="12"/>
+                <line x1="12" x2="12.01" y1="16" y2="16"/>
+            </svg>
+        );
+
+        // --- Constants ---
         const GROUP_ID = 35203067; 
         const PROXY = "https://corsproxy.io/?url=";
 
         // --- Helper Functions ---
         const formatNumber = (num) => {
+            if (!num) return "0";
             if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
             if (num >= 1000) return (num / 1000).toFixed(1) + "K";
             return num.toString();
@@ -44,39 +95,24 @@
         async function fetchGameThumbnail(universeId) {
             if (!universeId) return null;
             try {
-                // 1. Get Media
-                const mediaResp = await fetch(`${PROXY}https://games.roblox.com/v1/games/${universeId}/media`);
+                const mediaUrl = `${PROXY}${encodeURIComponent(`https://games.roblox.com/v1/games/${universeId}/media`)}`;
+                const mediaResp = await fetch(mediaUrl);
                 const mediaJson = await mediaResp.json();
                 
                 if (!mediaJson?.data?.length) return null;
 
-                // 2. Find Image Asset (AssetType = Image)
                 const firstImageEntry = mediaJson.data.find((item) => item.assetType === "Image" && item.approved);
                 if (!firstImageEntry?.imageId) return null;
                 
                 const imageId = firstImageEntry.imageId;
-
-                // 3. Try Thumbnails API (High Quality)
-                try {
-                    const q = `thumbnailIds=${encodeURIComponent(imageId)}&size=768x432&format=Webp&isCircular=false`;
-                    const thumbsResp = await fetch(`${PROXY}https://thumbnails.roblox.com/v1/games/${universeId}/thumbnails?${q}`);
-                    if (thumbsResp.ok) {
-                        const thumbsJson = await thumbsResp.json();
-                        if (thumbsJson?.data?.[0]?.imageUrl) return thumbsJson.data[0].imageUrl;
-                    }
-                } catch (e) {
-                    console.warn("Thumbnails API failed, using fallback");
-                }
-
-                // 4. Fallback CDN
                 return `https://tr.rbxcdn.com/${imageId}/768/432/Image/Webp`;
             } catch (err) {
-                console.error("Error fetching thumbnail:", err);
+                console.warn("Thumbnail fetch error:", err);
                 return null;
             }
         }
 
-        export default function RobloxStudioPage() {
+        function App() {
             const [games, setGames] = useState([]);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState("");
@@ -86,8 +122,11 @@
                 setLoading(true);
                 setError("");
                 try {
-                    // 1. Fetch Group Games
-                    const gamesResp = await fetch(`${PROXY}https://games.roblox.com/v2/groups/${GROUP_ID}/games?accessFilter=2&limit=50&sortOrder=Asc`);
+                    const gamesUrl = `${PROXY}${encodeURIComponent(`https://games.roblox.com/v2/groups/${GROUP_ID}/games?accessFilter=2&limit=50&sortOrder=Asc`)}`;
+                    const gamesResp = await fetch(gamesUrl);
+                    
+                    if (!gamesResp.ok) throw new Error("Failed to fetch group games");
+                    
                     const gamesJson = await gamesResp.json();
                     const rawGames = gamesJson.data || [];
 
@@ -97,40 +136,44 @@
                         return;
                     }
 
-                    // 2. Fetch Details & Thumbnails Concurrently
                     const processedGames = await Promise.all(
                         rawGames.map(async (game) => {
-                            const [detailsResp, thumbnail] = await Promise.all([
-                                fetch(`${PROXY}https://games.roblox.com/v1/games?universeIds=${game.id}`),
-                                fetchGameThumbnail(game.id),
-                            ]);
+                            try {
+                                const detailsUrl = `${PROXY}${encodeURIComponent(`https://games.roblox.com/v1/games?universeIds=${game.id}`)}`;
+                                const [detailsResp, thumbnail] = await Promise.all([
+                                    fetch(detailsUrl),
+                                    fetchGameThumbnail(game.id),
+                                ]);
 
-                            const detailsJson = await detailsResp.json();
-                            const details = detailsJson.data?.[0] || null;
+                                const detailsJson = await detailsResp.json();
+                                const details = detailsJson.data?.[0] || null;
 
-                            return {
-                                id: game.id,
-                                name: game.name,
-                                rootPlace: game.rootPlace,
-                                details,
-                                thumbnail,
-                            };
+                                return {
+                                    id: game.id,
+                                    name: game.name,
+                                    rootPlace: game.rootPlace,
+                                    details,
+                                    thumbnail,
+                                };
+                            } catch (e) {
+                                console.error("Error fetching details for game", game.id, e);
+                                return null;
+                            }
                         })
                     );
 
-                    // 3. Filter & Sort (Highest playing count first)
                     const validGames = processedGames
-                        .filter((g) => g.details)
+                        .filter((g) => g && g.details)
                         .sort((a, b) => (b.details?.playing || 0) - (a.details?.playing || 0));
 
-                    // 4. Calculate Stats
                     const totalPlayers = validGames.reduce((acc, g) => acc + (g.details?.playing || 0), 0);
                     const totalVisits = validGames.reduce((acc, g) => acc + (g.details?.visits || 0), 0);
 
                     setGames(validGames);
                     setStats({ players: totalPlayers, visits: totalVisits });
                 } catch (err) {
-                    setError(err.message || "Failed to load games");
+                    console.error(err);
+                    setError(err.message || "Failed to load games. The proxy might be down.");
                 } finally {
                     setLoading(false);
                 }
@@ -138,116 +181,119 @@
 
             useEffect(() => {
                 loadGames();
-                const interval = setInterval(loadGames, 60000);
-                return () => clearInterval(interval);
             }, []);
 
             return (
-                <div className="min-h-screen bg-neutral-950 text-white font-sans selection:bg-violet-500/30">
-                    {/* Background Glow Elements */}
-                    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px]" />
-                        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px]" />
-                    </div>
+                <div className="relative min-h-screen overflow-hidden">
+                    
+                    {/* Glow Effects */}
+                    <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
+                    <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-                    <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
+                    <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
                         
-                        {/* Header Section */}
+                        {/* Hero Header */}
                         <motion.div 
-                            initial={{ opacity: 0, y: -20 }}
+                            initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="text-center mb-20"
+                            className="flex flex-col items-center text-center mb-24"
                         >
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
-                                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                                <span className="text-xs font-medium text-neutral-300 tracking-wide uppercase">Live Updates</span>
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md">
+                                <span className="relative flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                <span className="text-xs font-medium text-neutral-300 tracking-wider uppercase">Live Studios Dashboard</span>
                             </div>
-                            <h1 className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 tracking-tight mb-4">
+                            
+                            <h1 className="text-6xl md:text-8xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/40 mb-6">
                                 Dani01 Studios
                             </h1>
-                            <p className="text-neutral-400 text-lg max-w-2xl mx-auto">
-                                Crafting immersive experiences on Roblox. Join thousands of players in our worlds.
+                            <p className="text-lg text-neutral-400 max-w-2xl leading-relaxed">
+                                Creating the next generation of immersive Roblox experiences. 
+                                Explore our universe of games and join the community.
                             </p>
                         </motion.div>
 
-                        {/* Stats Banner */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-24">
+                        {/* Stats Row */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
                             <StatCard 
-                                label="Current Active Players" 
-                                value={stats.players} 
-                                icon={<Users className="w-6 h-6 text-violet-400" />}
+                                label="Active Players"
+                                value={stats.players}
+                                icon={UsersIcon}
+                                color="text-violet-400"
                                 loading={loading}
                             />
                             <StatCard 
-                                label="Total All-Time Visits" 
-                                value={stats.visits} 
-                                icon={<MapPin className="w-6 h-6 text-blue-400" />}
+                                label="Total Visits"
+                                value={stats.visits}
+                                icon={MapPinIcon}
+                                color="text-cyan-400"
                                 loading={loading}
                             />
                         </div>
 
-                        {/* Games Grid */}
+                        {/* Games Section */}
                         <div className="space-y-8">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-2xl font-semibold flex items-center gap-2">
-                                    <Gamepad2 className="w-6 h-6 text-violet-400" />
-                                    Featured Games
+                            <div className="flex items-end justify-between border-b border-white/5 pb-4">
+                                <h2 className="text-3xl font-semibold tracking-tight flex items-center gap-3">
+                                    <GamepadIcon className="w-8 h-8 text-violet-400" />
+                                    Our Games
                                 </h2>
                             </div>
 
                             {loading ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                    {[1, 2, 3].map((i) => <GameSkeleton key={i} />)}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {[1,2,3].map(i => <SkeletonCard key={i} />)}
                                 </div>
                             ) : error ? (
-                                <div className="flex flex-col items-center justify-center py-20 bg-red-500/5 border border-red-500/10 rounded-2xl">
-                                    <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
-                                    <p className="text-red-200">{error}</p>
-                                    <button onClick={loadGames} className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-sm transition">
-                                        Try Again
+                                <div className="p-12 text-center bg-red-500/10 rounded-3xl border border-red-500/20">
+                                    <AlertCircleIcon className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                                    <h3 className="text-xl font-bold text-red-200 mb-2">Unable to Load Games</h3>
+                                    <p className="text-red-300/80 mb-6">{error}</p>
+                                    <button 
+                                        onClick={loadGames}
+                                        className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-full transition-colors"
+                                    >
+                                        Retry Connection
                                     </button>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                    {games.map((game, index) => (
-                                        <GameCard key={game.id} game={game} index={index} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {games.map((game, idx) => (
+                                        <GameCard key={game.id} game={game} index={idx} />
                                     ))}
                                 </div>
                             )}
                         </div>
-
+                        
                         {/* Footer */}
-                        <footer className="mt-32 text-center text-neutral-600 text-sm border-t border-white/5 pt-8">
-                            <p>© {new Date().getFullYear()} Dani01 Studios. Not affiliated with Roblox Corporation.</p>
+                        <footer className="mt-32 pt-8 border-t border-white/5 text-center text-neutral-500 text-sm">
+                            <p>© {new Date().getFullYear()} Dani01 Studios. Independent Roblox Development Group.</p>
                         </footer>
+
                     </div>
                 </div>
             );
         }
 
-        // --- Sub Components ---
-
-        function StatCard({ label, value, icon, loading }) {
+        function StatCard({ label, value, icon: Icon, color, loading }) {
             return (
                 <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="bg-neutral-900/50 border border-white/5 p-8 rounded-3xl backdrop-blur-md relative overflow-hidden group"
+                    whileHover={{ scale: 1.02 }}
+                    className="p-8 rounded-[2rem] bg-neutral-900/50 border border-white/5 backdrop-blur-xl relative overflow-hidden"
                 >
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="relative z-10 flex items-start justify-between">
+                    <div className="relative z-10 flex justify-between items-start">
                         <div>
                             <p className="text-neutral-400 font-medium mb-2">{label}</p>
                             {loading ? (
-                                <div className="h-12 w-32 bg-white/5 animate-pulse rounded-lg" />
+                                <div className="h-10 w-32 bg-white/10 animate-pulse rounded-lg" />
                             ) : (
-                                <h3 className="text-5xl font-bold tracking-tighter text-white">
-                                    {formatNumber(value)}
-                                </h3>
+                                <h3 className="text-5xl font-bold tracking-tight text-white">{formatNumber(value)}</h3>
                             )}
                         </div>
-                        <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
-                            {icon}
+                        <div className={`p-3 rounded-2xl bg-white/5 ${color}`}>
+                            <Icon size={32} />
                         </div>
                     </div>
                 </motion.div>
@@ -257,86 +303,78 @@
         function GameCard({ game, index }) {
             return (
                 <motion.a
-                    href={`https://www.roblox.com/games/${game.rootPlace.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    whileHover={{ y: -5 }}
-                    className="group block relative bg-neutral-900 border border-white/5 rounded-3xl overflow-hidden hover:border-violet-500/30 transition-colors duration-300"
+                    whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                    href={`https://www.roblox.com/games/${game.rootPlace.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group block bg-neutral-900 rounded-3xl overflow-hidden border border-white/5 hover:border-violet-500/50 transition-colors relative"
                 >
-                    {/* Image Container */}
-                    <div className="aspect-video w-full relative overflow-hidden bg-neutral-800">
+                    {/* Thumbnail */}
+                    <div className="aspect-video w-full bg-neutral-800 relative overflow-hidden">
                         <img 
-                            src={game.thumbnail || "/api/placeholder/400/320"} 
+                            src={game.thumbnail || `https://placehold.co/768x432/171717/525252?text=${encodeURIComponent(game.name)}`} 
                             alt={game.name}
-                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent opacity-80" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent opacity-60" />
                         
-                        {/* Float Play Button */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-full">
-                                <Gamepad2 className="w-8 h-8 text-white" />
+                        {/* Hover Play Icon */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/20 backdrop-blur-[2px]">
+                            <div className="bg-white/20 p-4 rounded-full backdrop-blur-md border border-white/30">
+                                <GamepadIcon className="w-8 h-8 text-white" />
                             </div>
                         </div>
                     </div>
 
-                    {/* Content */}
+                    {/* Info */}
                     <div className="p-6">
-                        <h3 className="text-xl font-bold text-white mb-4 group-hover:text-violet-400 transition-colors truncate">
+                        <h3 className="text-xl font-bold text-white mb-4 line-clamp-1 group-hover:text-violet-300 transition-colors">
                             {game.name}
                         </h3>
                         
-                        <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4">
-                            <div className="flex flex-col gap-1">
-                                <span className="text-xs text-neutral-500 uppercase font-semibold">Playing</span>
-                                <div className="flex items-center gap-1.5 text-green-400">
-                                    <Users className="w-3.5 h-3.5" />
-                                    <span className="font-bold">{formatNumber(game.details?.playing || 0)}</span>
-                                </div>
-                            </div>
-                            
-                            <div className="flex flex-col gap-1 border-l border-white/5 pl-4">
-                                <span className="text-xs text-neutral-500 uppercase font-semibold">Visits</span>
-                                <div className="flex items-center gap-1.5 text-blue-400">
-                                    <MapPin className="w-3.5 h-3.5" />
-                                    <span className="font-bold">{formatNumber(game.details?.visits || 0)}</span>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-1 border-l border-white/5 pl-4">
-                                <span className="text-xs text-neutral-500 uppercase font-semibold">Liked</span>
-                                <div className="flex items-center gap-1.5 text-yellow-400">
-                                    <Heart className="w-3.5 h-3.5" />
-                                    <span className="font-bold">{formatNumber(game.details?.favoritedCount || 0)}</span>
-                                </div>
-                            </div>
+                        <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/5">
+                            <StatItem icon={UsersIcon} value={game.details?.playing} color="text-green-400" label="Playing" />
+                            <StatItem icon={MapPinIcon} value={game.details?.visits} color="text-blue-400" label="Visits" />
+                            <StatItem icon={HeartIcon} value={game.details?.favoritedCount} color="text-pink-400" label="Likes" />
                         </div>
                     </div>
                 </motion.a>
             );
         }
 
-        function GameSkeleton() {
+        function StatItem({ icon: Icon, value, color, label }) {
             return (
-                <div className="bg-neutral-900 border border-white/5 rounded-3xl overflow-hidden h-[340px]">
-                    <div className="w-full h-[200px] bg-neutral-800 animate-pulse" />
-                    <div className="p-6">
-                        <div className="h-6 w-2/3 bg-neutral-800 animate-pulse rounded mb-4" />
-                        <div className="flex gap-4 pt-4 border-t border-white/5">
-                            <div className="h-8 w-1/3 bg-neutral-800 animate-pulse rounded" />
-                            <div className="h-8 w-1/3 bg-neutral-800 animate-pulse rounded" />
-                            <div className="h-8 w-1/3 bg-neutral-800 animate-pulse rounded" />
+                <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5">
+                        <Icon size={14} className={color} />
+                        <span className="text-xs font-bold text-neutral-300">{formatNumber(value || 0)}</span>
+                    </div>
+                    <span className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">{label}</span>
+                </div>
+            );
+        }
+
+        function SkeletonCard() {
+            return (
+                <div className="bg-neutral-900 rounded-3xl overflow-hidden border border-white/5 h-[320px]">
+                    <div className="h-[180px] bg-white/5 animate-pulse" />
+                    <div className="p-6 space-y-4">
+                        <div className="h-6 w-3/4 bg-white/5 animate-pulse rounded" />
+                        <div className="flex gap-4 pt-2">
+                            <div className="h-8 w-1/3 bg-white/5 animate-pulse rounded" />
+                            <div className="h-8 w-1/3 bg-white/5 animate-pulse rounded" />
+                            <div className="h-8 w-1/3 bg-white/5 animate-pulse rounded" />
                         </div>
                     </div>
                 </div>
             );
         }
 
-        const root = createRoot(document.getElementById('root'));
-        root.render(<RobloxStudioPage />);
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
-</html>
+    </html>
