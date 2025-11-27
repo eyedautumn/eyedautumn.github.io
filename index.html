@@ -92,34 +92,43 @@
             return num.toString();
         };
 
-        async function fetchGameThumbnail(universeId) {
+        async function fetchGameThumbnail(universeId, size = "768x432") {
     if (!universeId) return null;
 
     try {
-        // Step 1: Get the game's media (images)
+        // Step 1: Get game's media to find the main image asset ID
         const mediaResp = await fetch(`${PROXY}https://games.roblox.com/v1/games/${universeId}/media`);
         const mediaJson = await mediaResp.json();
 
         if (!mediaJson?.data?.length) return null;
 
-        // Find the first approved image (usually the main thumbnail)
-        const imageEntry = mediaJson.data.find(item => 
-            item.assetType === "Image" && item.approved && item.imageId
+        const imageEntry = mediaJson.data.find(
+            item => item.assetType === "Image" && item.approved && item.imageId
         );
 
         if (!imageEntry?.imageId) return null;
 
         const imageId = imageEntry.imageId;
 
-        // Step 2: Return the ORIGINAL full-resolution PNG (best quality, no compression)
+        // Step 2: Use official thumbnails API + force PNG (not WebP!)
+        const thumbResp = await fetch(
+            `${PROXY}https://thumbnails.roblox.com/v1/assets?assetIds=${imageId}&size=${size}&format=Webp&isCircular=false`
+        );
+
+        const thumbJson = await thumbResp.json();
+
+        if (thumbJson?.data?.[0]?.state === "Completed") {
+            return thumbJson.data[0].imageUrl; // ← This is always a clean, direct PNG URL
+        }
+
+        // Fallback: if for some reason it's blocked/moderated, use assetdelivery
         return `https://assetdelivery.roblox.com/v1/asset?id=${imageId}`;
 
-        // This link serves the EXACT uploaded PNG file — crisp, full size, no watermark, perfect for websites
     } catch (err) {
         console.warn("Game thumbnail fetch failed:", err);
         return null;
     }
-    }
+        }
 
         function App() {
             const [games, setGames] = useState([]);
