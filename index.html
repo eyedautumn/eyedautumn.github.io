@@ -93,27 +93,33 @@
         };
 
         async function fetchGameThumbnail(universeId) {
-            if (!universeId) return null;
-            try {
-                const mediaUrl = `${PROXY}${encodeURIComponent(`https://games.roblox.com/v1/games/${universeId}/media`)}`;
-                const mediaResp = await fetch(mediaUrl);
-                const mediaJson = await mediaResp.json();
-                
-                if (!mediaJson?.data?.length) return null;
+    if (!universeId) return null;
 
-                const firstImageEntry = mediaJson.data.find((item) => item.assetType === "Image" && item.approved);
-                if (!firstImageEntry?.imageId) return null;
-                const imageId = firstImageEntry.imageId;
-                const imageUrl = `${PROXY}${encodeURIComponent(`https://thumbnails.roblox.com/v1/assets?assetIds=${imageId}&size=768x432&format=Webp&isCircular=false`)}`
-                const imageResult = await fetch(imageUrl)
-                const jsonResult = await imageResult.json();
-                
-                return jsonResult.imageUrl
-            } catch (err) {
-                console.warn("Thumbnail fetch error:", err);
-                return null;
-            }
-        }
+    try {
+        // Step 1: Get the game's media (images)
+        const mediaResp = await fetch(`${PROXY}https://games.roblox.com/v1/games/${universeId}/media`);
+        const mediaJson = await mediaResp.json();
+
+        if (!mediaJson?.data?.length) return null;
+
+        // Find the first approved image (usually the main thumbnail)
+        const imageEntry = mediaJson.data.find(item => 
+            item.assetType === "Image" && item.approved && item.imageId
+        );
+
+        if (!imageEntry?.imageId) return null;
+
+        const imageId = imageEntry.imageId;
+
+        // Step 2: Return the ORIGINAL full-resolution PNG (best quality, no compression)
+        return `https://assetdelivery.roblox.com/v1/asset?id=${imageId}`;
+
+        // This link serves the EXACT uploaded PNG file — crisp, full size, no watermark, perfect for websites
+    } catch (err) {
+        console.warn("Game thumbnail fetch failed:", err);
+        return null;
+    }
+    }
 
         function App() {
             const [games, setGames] = useState([]);
