@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dani01 Studios</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Load Babel for JSX/TS transformation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-neutral-950 text-white overflow-x-hidden">
+    <div id="root"></div>
+
+    <script type="text/babel" data-presets="react,typescript" data-type="module">
+        import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
+        import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
+        import { motion } from 'https://esm.sh/framer-motion@10.16.4';
+        import { Users, MapPin, Heart, Loader2, Gamepad2, AlertCircle } from 'https://esm.sh/lucide-react@0.292.0';
+
+        // --- Constants ---
+        // Replace this with your actual Group ID
+        const GROUP_ID = 35203067; 
+        const PROXY = "https://corsproxy.io/?url=";
+
+        // --- Types ---
+        interface GameData {
+            id: number;
+            name: string;
+            rootPlace: { id: number };
+            details?: {
+                playing: number;
+                visits: number;
+                favoritedCount: number;
+            };
+            thumbnail?: string;
+        }
+
+        // --- Helper Functions ---
+        const formatNumber = (num: number) => {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+            if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+            return num.toString();
+        };
+
+        async function fetchGameThumbnail(universeId: number) {
+            if (!universeId) return null;
+            try {
+                // 1. Get Media
+                const mediaResp = await fetch(`${PROXY}https://games.roblox.com/v1/games/${universeId}/media`);
+                const mediaJson = await mediaResp.json();
+                
+                if (!mediaJson?.data?.length) return null;
+
+                // 2. Find Image Asset (AssetType = Image)
+                const firstImageEntry = mediaJson.data.find((item: any) => item.assetType === "Image" && item.approved);
+                if (!firstImageEntry?.imageId) return null;
+                
+                const imageId = firstImageEntry.imageId;
+
+                // 3. Try Thumbnails API (High Quality)
+                try {
+                    const q = `thumbnailIds=${encodeURIComponent(imageId)}&size=768x432&format=Webp&isCircular=false`;
+                    const thumbsResp = await fetch(`${PROXY}https://thumbnails.roblox.com/v1/games/${universeId}/thumbnails?${q}`);
+                    if (thumbsResp.ok) {
+                        const thumbsJson = await thumbsResp.json();
+                        if (thumbsJson?.data?.[0]?.imageUrl) return thumbsJson.data[0].imageUrl;
+                    }
+                } catch (e) {
+                    console.warn("Thumbnails API failed, using fallback");
+                }
+
+                // 4. Fallback CDN
+                return `https://tr.rbxcdn.com/${imageId}/768/432/Image/Webp`;
+            } catch (err) {
+                console.error("Error fetching thumbnail:", err);
+                return null;
+            }
+        }
+
+        export default function RobloxStudioPage() {
+            const [games, setGames] = useState<GameData[]>([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState("");
+            const [stats, setStats] = useState({ players: 0, visits: 0 });
+
+            const loadGames = async () => {
+                setLoading(true);
+                setError("");
+                try {
+                    // 1. Fetch Group Games
+                    const gamesResp = await fetch(`${PROXY}https://games.roblox.com/v2/groups/${GROUP_ID}/games?accessFilter=2&limit=50&sortOrder=Asc`);
+                    const gamesJson = await gamesResp.json();
+                    const rawGames = gamesJson.data || [];
+
+                    if (rawGames.length === 0) {
+                        setError("No games found.");
+                        setLoading(false);
+                        return;
+                    }
+
+                    // 2. Fetch Details & Thumbnails Concurrently
+                    const processedGames = await Promise.all(
+                        rawGames.map(async (game: any) => {
+                            const [detailsResp, thumbnail] = await Promise.all([
+                                fetch(`${PROXY}https://games.roblox.com/v1/games?universeIds=${game.id}`),
+                                fetchGameThumbnail(game.id),
+                            ]);
+
+                            const detailsJson = await detailsResp.json();
+                            const details = detailsJson.data?.[0] || null;
+
+                            return {
+                                id: game.id,
+                                name: game.name,
+                                rootPlace: game.rootPlace,
+                                details,
+                                thumbnail,
+                            };
+                        })
+                    );
+
+                    // 3. Filter & Sort (Highest playing count first)
+                    const validGames = processedGames
+                        .filter((g) => g.details)
+                        .sort((a, b) => (b.details?.playing || 0) - (a.details?.playing || 0));
+
+                    // 4. Calculate Stats
+                    const totalPlayers = validGames.reduce((acc, g) => acc + (g.details?.playing || 0), 0);
+                    const totalVisits = validGames.reduce((acc, g) => acc + (g.details?.visits || 0), 0);
+
+                    setGames(validGames);
+                    setStats({ players: totalPlayers, visits: totalVisits });
+                } catch (err: any) {
+                    setError(err.message || "Failed to load games");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                loadGames();
+                const interval = setInterval(loadGames, 60000);
+                return () => clearInterval(interval);
+            }, []);
+
+            return (
+                <div className="min-h-screen bg-neutral-950 text-white font-sans selection:bg-violet-500/30">
+                    {/* Background Glow Elements */}
+                    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+                        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-violet-600/20 rounded-full blur-[120px]" />
+                        <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px]" />
+                    </div>
+
+                    <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
+                        
+                        {/* Header Section */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-center mb-20"
+                        >
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 backdrop-blur-sm">
+                                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                                <span className="text-xs font-medium text-neutral-300 tracking-wide uppercase">Live Updates</span>
+                            </div>
+                            <h1 className="text-5xl md:text-7xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 tracking-tight mb-4">
+                                Dani01 Studios
+                            </h1>
+                            <p className="text-neutral-400 text-lg max-w-2xl mx-auto">
+                                Crafting immersive experiences on Roblox. Join thousands of players in our worlds.
+                            </p>
+                        </motion.div>
+
+                        {/* Stats Banner */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-24">
+                            <StatCard 
+                                label="Current Active Players" 
+                                value={stats.players} 
+                                icon={<Users className="w-6 h-6 text-violet-400" />}
+                                loading={loading}
+                            />
+                            <StatCard 
+                                label="Total All-Time Visits" 
+                                value={stats.visits} 
+                                icon={<MapPin className="w-6 h-6 text-blue-400" />}
+                                loading={loading}
+                            />
+                        </div>
+
+                        {/* Games Grid */}
+                        <div className="space-y-8">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-2xl font-semibold flex items-center gap-2">
+                                    <Gamepad2 className="w-6 h-6 text-violet-400" />
+                                    Featured Games
+                                </h2>
+                            </div>
+
+                            {loading ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {[1, 2, 3].map((i) => <GameSkeleton key={i} />)}
+                                </div>
+                            ) : error ? (
+                                <div className="flex flex-col items-center justify-center py-20 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                                    <AlertCircle className="w-10 h-10 text-red-400 mb-3" />
+                                    <p className="text-red-200">{error}</p>
+                                    <button onClick={loadGames} className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-sm transition">
+                                        Try Again
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {games.map((game, index) => (
+                                        <GameCard key={game.id} game={game} index={index} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <footer className="mt-32 text-center text-neutral-600 text-sm border-t border-white/5 pt-8">
+                            <p>© {new Date().getFullYear()} Dani01 Studios. Not affiliated with Roblox Corporation.</p>
+                        </footer>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- Sub Components ---
+
+        function StatCard({ label, value, icon, loading }: { label: string; value: number; icon: React.ReactNode; loading: boolean }) {
+            return (
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-neutral-900/50 border border-white/5 p-8 rounded-3xl backdrop-blur-md relative overflow-hidden group"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    <div className="relative z-10 flex items-start justify-between">
+                        <div>
+                            <p className="text-neutral-400 font-medium mb-2">{label}</p>
+                            {loading ? (
+                                <div className="h-12 w-32 bg-white/5 animate-pulse rounded-lg" />
+                            ) : (
+                                <h3 className="text-5xl font-bold tracking-tighter text-white">
+                                    {formatNumber(value)}
+                                </h3>
+                            )}
+                        </div>
+                        <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
+                            {icon}
+                        </div>
+                    </div>
+                </motion.div>
+            );
+        }
+
+        function GameCard({ game, index }: { game: GameData; index: number }) {
+            return (
+                <motion.a
+                    href={`https://www.roblox.com/games/${game.rootPlace.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{ y: -5 }}
+                    className="group block relative bg-neutral-900 border border-white/5 rounded-3xl overflow-hidden hover:border-violet-500/30 transition-colors duration-300"
+                >
+                    {/* Image Container */}
+                    <div className="aspect-video w-full relative overflow-hidden bg-neutral-800">
+                        <img 
+                            src={game.thumbnail || "/api/placeholder/400/320"} 
+                            alt={game.name}
+                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-neutral-900 via-transparent to-transparent opacity-80" />
+                        
+                        {/* Float Play Button */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-full">
+                                <Gamepad2 className="w-8 h-8 text-white" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6">
+                        <h3 className="text-xl font-bold text-white mb-4 group-hover:text-violet-400 transition-colors truncate">
+                            {game.name}
+                        </h3>
+                        
+                        <div className="grid grid-cols-3 gap-4 border-t border-white/5 pt-4">
+                            <div className="flex flex-col gap-1">
+                                <span className="text-xs text-neutral-500 uppercase font-semibold">Playing</span>
+                                <div className="flex items-center gap-1.5 text-green-400">
+                                    <Users className="w-3.5 h-3.5" />
+                                    <span className="font-bold">{formatNumber(game.details?.playing || 0)}</span>
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-col gap-1 border-l border-white/5 pl-4">
+                                <span className="text-xs text-neutral-500 uppercase font-semibold">Visits</span>
+                                <div className="flex items-center gap-1.5 text-blue-400">
+                                    <MapPin className="w-3.5 h-3.5" />
+                                    <span className="font-bold">{formatNumber(game.details?.visits || 0)}</span>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-1 border-l border-white/5 pl-4">
+                                <span className="text-xs text-neutral-500 uppercase font-semibold">Liked</span>
+                                <div className="flex items-center gap-1.5 text-yellow-400">
+                                    <Heart className="w-3.5 h-3.5" />
+                                    <span className="font-bold">{formatNumber(game.details?.favoritedCount || 0)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </motion.a>
+            );
+        }
+
+        function GameSkeleton() {
+            return (
+                <div className="bg-neutral-900 border border-white/5 rounded-3xl overflow-hidden h-[340px]">
+                    <div className="w-full h-[200px] bg-neutral-800 animate-pulse" />
+                    <div className="p-6">
+                        <div className="h-6 w-2/3 bg-neutral-800 animate-pulse rounded mb-4" />
+                        <div className="flex gap-4 pt-4 border-t border-white/5">
+                            <div className="h-8 w-1/3 bg-neutral-800 animate-pulse rounded" />
+                            <div className="h-8 w-1/3 bg-neutral-800 animate-pulse rounded" />
+                            <div className="h-8 w-1/3 bg-neutral-800 animate-pulse rounded" />
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<RobloxStudioPage />);
+    </script>
+</body>
+  </html>
