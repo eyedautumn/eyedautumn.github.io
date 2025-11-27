@@ -17,44 +17,31 @@
             }
         }
     </script>
-    <!-- Load Babel for JSX/TS transformation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
 </head>
 <body class="bg-neutral-950 text-white overflow-x-hidden">
     <div id="root"></div>
 
-    <script type="text/babel" data-presets="react,typescript" data-type="module">
+    <script type="text/babel" data-type="module">
         import React, { useState, useEffect } from 'https://esm.sh/react@18.2.0';
         import { createRoot } from 'https://esm.sh/react-dom@18.2.0/client';
         import { motion } from 'https://esm.sh/framer-motion@10.16.4';
         import { Users, MapPin, Heart, Loader2, Gamepad2, AlertCircle } from 'https://esm.sh/lucide-react@0.292.0';
 
-        // --- Constants ---
-        // Replace this with your actual Group ID
         const GROUP_ID = 35203067; 
         const PROXY = "https://corsproxy.io/?url=";
 
-        // --- Types ---
-        interface GameData {
-            id: number;
-            name: string;
-            rootPlace: { id: number };
-            details?: {
-                playing: number;
-                visits: number;
-                favoritedCount: number;
-            };
-            thumbnail?: string;
-        }
-
         // --- Helper Functions ---
-        const formatNumber = (num: number) => {
+        const formatNumber = (num) => {
             if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
             if (num >= 1000) return (num / 1000).toFixed(1) + "K";
             return num.toString();
         };
 
-        async function fetchGameThumbnail(universeId: number) {
+        async function fetchGameThumbnail(universeId) {
             if (!universeId) return null;
             try {
                 // 1. Get Media
@@ -64,7 +51,7 @@
                 if (!mediaJson?.data?.length) return null;
 
                 // 2. Find Image Asset (AssetType = Image)
-                const firstImageEntry = mediaJson.data.find((item: any) => item.assetType === "Image" && item.approved);
+                const firstImageEntry = mediaJson.data.find((item) => item.assetType === "Image" && item.approved);
                 if (!firstImageEntry?.imageId) return null;
                 
                 const imageId = firstImageEntry.imageId;
@@ -90,7 +77,7 @@
         }
 
         export default function RobloxStudioPage() {
-            const [games, setGames] = useState<GameData[]>([]);
+            const [games, setGames] = useState([]);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState("");
             const [stats, setStats] = useState({ players: 0, visits: 0 });
@@ -112,7 +99,7 @@
 
                     // 2. Fetch Details & Thumbnails Concurrently
                     const processedGames = await Promise.all(
-                        rawGames.map(async (game: any) => {
+                        rawGames.map(async (game) => {
                             const [detailsResp, thumbnail] = await Promise.all([
                                 fetch(`${PROXY}https://games.roblox.com/v1/games?universeIds=${game.id}`),
                                 fetchGameThumbnail(game.id),
@@ -142,7 +129,7 @@
 
                     setGames(validGames);
                     setStats({ players: totalPlayers, visits: totalVisits });
-                } catch (err: any) {
+                } catch (err) {
                     setError(err.message || "Failed to load games");
                 } finally {
                     setLoading(false);
@@ -240,7 +227,7 @@
 
         // --- Sub Components ---
 
-        function StatCard({ label, value, icon, loading }: { label: string; value: number; icon: React.ReactNode; loading: boolean }) {
+        function StatCard({ label, value, icon, loading }) {
             return (
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
@@ -267,7 +254,7 @@
             );
         }
 
-        function GameCard({ game, index }: { game: GameData; index: number }) {
+        function GameCard({ game, index }) {
             return (
                 <motion.a
                     href={`https://www.roblox.com/games/${game.rootPlace.id}`}
@@ -352,4 +339,4 @@
         root.render(<RobloxStudioPage />);
     </script>
 </body>
-  </html>
+</html>
