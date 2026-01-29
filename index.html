@@ -136,6 +136,10 @@
         // ========================================
         const PROXY_LIST = [
             {
+                name: 'cloudfare',
+                buildUrl: (url) => `https://9a2a936c.proxydani.pages.dev//?url=`
+            },
+            {
                 name: 'allorigins',
                 buildUrl: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
             },
