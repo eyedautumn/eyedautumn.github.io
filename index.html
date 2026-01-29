@@ -130,8 +130,54 @@
            67644645,
            138451840
         ];
-        
-        const PROXY = "https://corsproxy.io/?url=";
+
+        // ========================================
+        // CORS PROXY CONFIGURATION (with fallback)
+        // ========================================
+        const PROXY_LIST = [
+            {
+                name: 'allorigins',
+                buildUrl: (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+            },
+            {
+                name: 'corsproxy.org',
+                buildUrl: (url) => `https://corsproxy.org/?${encodeURIComponent(url)}`
+            }
+        ];
+
+        // Proxy fetch with automatic fallback
+        async function proxyFetch(url) {
+            let lastError;
+            
+            for (const proxy of PROXY_LIST) {
+                try {
+                    const proxyUrl = proxy.buildUrl(url);
+                    const response = await fetch(proxyUrl);
+                    
+                    if (response.ok) {
+                        return response;
+                    }
+                    
+                    // Check if response is an error JSON (like corsproxy.io's payment error)
+                    const text = await response.text();
+                    try {
+                        const json = JSON.parse(text);
+                        if (json.error) {
+                            throw new Error(json.error);
+                        }
+                    } catch (e) {
+                        // Not JSON or no error field, continue
+                    }
+                    
+                    lastError = new Error(`${proxy.name}: HTTP ${response.status}`);
+                } catch (error) {
+                    lastError = error;
+                    console.warn(`Proxy ${proxy.name} failed:`, error.message);
+                }
+            }
+            
+            throw lastError || new Error('All proxies failed');
+        }
 
         // Filter options
         const FILTER_OPTIONS = {
@@ -150,9 +196,7 @@
 
         async function fetchGroupInfo(groupId) {
             try {
-                const url = `${PROXY}${encodeURIComponent(`https://groups.roblox.com/v1/groups/${groupId}`)}`;
-                const resp = await fetch(url);
-                if (!resp.ok) throw new Error("Failed to fetch group info");
+                const resp = await proxyFetch(`https://groups.roblox.com/v1/groups/${groupId}`);
                 const data = await resp.json();
                 return { 
                     id: groupId, 
@@ -170,7 +214,7 @@
             if (!universeId) return null;
 
             try {
-                const mediaResp = await fetch(`${PROXY}https://games.roblox.com/v1/games/${universeId}/media`);
+                const mediaResp = await proxyFetch(`https://games.roblox.com/v1/games/${universeId}/media`);
                 const mediaJson = await mediaResp.json();
 
                 if (!mediaJson?.data?.length) return null;
@@ -183,8 +227,8 @@
 
                 const imageId = imageEntry.imageId;
 
-                const thumbResp = await fetch(
-                    `${PROXY}https://thumbnails.roblox.com/v1/assets?assetIds=${imageId}&size=${size}&format=Webp&isCircular=false`
+                const thumbResp = await proxyFetch(
+                    `https://thumbnails.roblox.com/v1/assets?assetIds=${imageId}&size=${size}&format=Webp&isCircular=false`
                 );
 
                 const thumbJson = await thumbResp.json();
@@ -203,10 +247,7 @@
 
         async function fetchGamesFromGroup(groupId) {
             try {
-                const gamesUrl = `${PROXY}${encodeURIComponent(`https://games.roblox.com/v2/groups/${groupId}/games?accessFilter=2&limit=50&sortOrder=Asc`)}`;
-                const gamesResp = await fetch(gamesUrl);
-                
-                if (!gamesResp.ok) throw new Error("Failed to fetch group games");
+                const gamesResp = await proxyFetch(`https://games.roblox.com/v2/groups/${groupId}/games?accessFilter=2&limit=50&sortOrder=Asc`);
                 
                 const gamesJson = await gamesResp.json();
                 const rawGames = gamesJson.data || [];
@@ -214,9 +255,8 @@
                 const processedGames = await Promise.all(
                     rawGames.map(async (game) => {
                         try {
-                            const detailsUrl = `${PROXY}${encodeURIComponent(`https://games.roblox.com/v1/games?universeIds=${game.id}`)}`;
                             const [detailsResp, thumbnail] = await Promise.all([
-                                fetch(detailsUrl),
+                                proxyFetch(`https://games.roblox.com/v1/games?universeIds=${game.id}`),
                                 fetchGameThumbnail(game.id),
                             ]);
 
