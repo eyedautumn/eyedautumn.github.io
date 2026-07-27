@@ -157,6 +157,9 @@
 
         const NEW_SITE_URL = "https://dani01-studios.lofty-lamp-8094.chatgpt.site";
 
+        // Set to false to bring the legacy dashboard back without deleting it.
+        const SHOW_MOVED_NOTICE = true;
+
         // 11:00 in UTC+2 is 09:00 UTC. Always count to the next daily occurrence.
         function getNextLaunchTime() {
             const now = new Date();
@@ -464,7 +467,65 @@
             );
         }
 
+        function MovedNotice() {
+            return (
+                <div className="relative min-h-screen overflow-hidden flex items-center justify-center px-6 py-20">
+                    {/* Keep the notice in the same visual language as the old dashboard. */}
+                    <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-violet-600/20 rounded-full blur-[120px] pointer-events-none" />
+                    <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+
+                    <motion.main
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                        className="relative z-10 w-full max-w-2xl text-center"
+                    >
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-md">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                            </span>
+                            <span className="text-xs font-medium text-neutral-300 tracking-wider uppercase">Dani01 Studios</span>
+                        </div>
+
+                        <div className="bg-neutral-900/70 border border-white/10 rounded-3xl p-8 sm:p-12 shadow-2xl backdrop-blur-xl">
+                            <div className="mx-auto mb-7 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-400/20">
+                                <ExternalLinkIcon size={30} className="text-violet-300" />
+                            </div>
+                            <h1 className="text-4xl sm:text-6xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white via-white to-white/40 mb-5">
+                                We&apos;ve moved
+                            </h1>
+                            <p className="text-lg text-neutral-400 leading-relaxed mb-8">
+                                Dani01 Studios has a new home. Visit our new website for the latest updates, games, and projects.
+                            </p>
+                            <a
+                                href={NEW_SITE_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mb-8 block break-all text-sm text-violet-300 underline decoration-violet-300/30 underline-offset-4 transition-colors hover:text-violet-200"
+                            >
+                                {NEW_SITE_URL}
+                            </a>
+                            <a
+                                href={NEW_SITE_URL}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-6 py-3.5 font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:bg-violet-500 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 focus:ring-offset-neutral-950"
+                            >
+                                Visit our new website
+                                <ExternalLinkIcon size={18} />
+                            </a>
+                        </div>
+                    </motion.main>
+                </div>
+            );
+        }
+
         function App() {
+            if (SHOW_MOVED_NOTICE) {
+                return <MovedNotice />;
+            }
+
             const [allGames, setAllGames] = useState([]);
             const [groups, setGroups] = useState([]);
             const [loading, setLoading] = useState(true);
