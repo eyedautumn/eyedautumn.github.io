@@ -24,6 +24,30 @@
             }
         }
     </script>
+    <style>
+        @keyframes countdown-shimmer {
+            0%, 100% { transform: translateX(-110%); opacity: 0; }
+            20%, 80% { opacity: .75; }
+            50% { transform: translateX(110%); }
+        }
+
+        @keyframes confetti-fall {
+            0% { transform: translate3d(0, -12vh, 0) rotate(0deg); opacity: 1; }
+            100% { transform: translate3d(var(--drift), 108vh, 0) rotate(var(--spin)); opacity: 0; }
+        }
+
+        .countdown-shimmer {
+            animation: countdown-shimmer 4.5s ease-in-out infinite;
+        }
+
+        .confetti-piece {
+            animation: confetti-fall var(--duration) var(--delay) cubic-bezier(.2,.7,.3,1) forwards;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .countdown-shimmer, .confetti-piece { animation: none; }
+        }
+    </style>
     <!-- React & ReactDOM UMD -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -130,6 +154,20 @@
            67644645,
            138451840
         ];
+
+        const NEW_SITE_URL = "https://dani01-studios.lofty-lamp-8094.chatgpt.site";
+
+        // 11:00 in UTC+2 is 09:00 UTC. Always count to the next daily occurrence.
+        function getNextLaunchTime() {
+            const now = new Date();
+            const target = Date.UTC(
+                now.getUTCFullYear(),
+                now.getUTCMonth(),
+                now.getUTCDate(),
+                9, 0, 0, 0
+            );
+            return target > Date.now() ? target : target + 86400000;
+        }
 
         // ========================================
         // CORS PROXY CONFIGURATION (with fallback)
@@ -289,6 +327,143 @@
             }
         }
 
+        function CountdownUnit({ value, label }) {
+            const displayValue = String(value).padStart(2, "0");
+
+            return (
+                <div className="flex flex-col items-center gap-2 min-w-[4.2rem] sm:min-w-[5.5rem]">
+                    <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-3 shadow-2xl shadow-violet-950/30 sm:px-5 sm:py-4">
+                        <div className="absolute inset-y-0 left-0 w-1/2 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent countdown-shimmer" />
+                        <AnimatePresence mode="popLayout" initial={false}>
+                            <motion.span
+                                key={displayValue}
+                                initial={{ opacity: 0, y: 12, filter: "blur(5px)" }}
+                                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                                exit={{ opacity: 0, y: -12, filter: "blur(5px)" }}
+                                transition={{ duration: 0.28, ease: "easeOut" }}
+                                className="relative block text-center text-3xl font-bold tabular-nums tracking-tight text-white sm:text-5xl"
+                            >
+                                {displayValue}
+                            </motion.span>
+                        </AnimatePresence>
+                    </div>
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-neutral-500 sm:text-xs">{label}</span>
+                </div>
+            );
+        }
+
+        function Confetti() {
+            const pieces = useMemo(() => Array.from({ length: 72 }, (_, index) => ({
+                id: index,
+                left: `${(index * 37) % 101}%`,
+                color: ["#a78bfa", "#22d3ee", "#fbbf24", "#fb7185", "#4ade80"][index % 5],
+                drift: `${((index * 53) % 220) - 110}px`,
+                spin: `${360 + ((index * 71) % 720)}deg`,
+                duration: `${3.8 + ((index * 17) % 22) / 10}s`,
+                delay: `${(index % 12) / 20}s`,
+                width: `${6 + (index % 4) * 2}px`,
+                height: `${10 + (index % 5) * 3}px`,
+            })), []);
+
+            return (
+                <div className="pointer-events-none fixed inset-0 z-[70] overflow-hidden" aria-hidden="true">
+                    {pieces.map(piece => (
+                        <span
+                            key={piece.id}
+                            className="confetti-piece absolute top-0 rounded-sm"
+                            style={{
+                                left: piece.left,
+                                width: piece.width,
+                                height: piece.height,
+                                backgroundColor: piece.color,
+                                "--drift": piece.drift,
+                                "--spin": piece.spin,
+                                "--duration": piece.duration,
+                                "--delay": piece.delay,
+                            }}
+                        />
+                    ))}
+                </div>
+            );
+        }
+
+        function CountdownBanner() {
+            const [target, setTarget] = useState(() => getNextLaunchTime());
+            const [remaining, setRemaining] = useState(() => Math.max(0, target - Date.now()));
+            const [complete, setComplete] = useState(false);
+
+            useEffect(() => {
+                const update = () => {
+                    const nextRemaining = Math.max(0, target - Date.now());
+                    setRemaining(nextRemaining);
+                    if (nextRemaining === 0) setComplete(true);
+                };
+
+                update();
+                const interval = window.setInterval(update, 250);
+                return () => window.clearInterval(interval);
+            }, [target]);
+
+            const totalSeconds = Math.floor(remaining / 1000);
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            return (
+                <>
+                    {complete && <Confetti />}
+                    <motion.section
+                        initial={{ opacity: 0, y: -18 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative mb-16 overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-violet-500/[0.2] via-neutral-950/95 to-cyan-500/[0.1] px-5 py-10 text-center shadow-2xl shadow-violet-950/30 ring-1 ring-inset ring-white/[0.04] sm:px-10 sm:py-12"
+                    >
+                        <div className="absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/70 to-transparent" />
+                        <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
+                        <div className="absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
+                        <div className="relative z-10">
+                            <AnimatePresence mode="wait">
+                                {complete ? (
+                                    <motion.div key="complete" initial={{ opacity: 0, scale: .92 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center">
+                                        <span className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-cyan-300">The wait is over</span>
+                                        <h2 className="mb-3 text-3xl font-bold tracking-tight text-white sm:text-5xl">Welcome to our new site ✨</h2>
+                                        <p className="mb-7 max-w-xl text-sm leading-relaxed text-neutral-300 sm:text-base">Dani01 Studios has moved. Come see what we have been building.</p>
+                                        <motion.a
+                                            whileHover={{ scale: 1.04, y: -2 }}
+                                            whileTap={{ scale: .98 }}
+                                            href={NEW_SITE_URL}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-3 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-neutral-950 shadow-xl shadow-cyan-500/10 transition-colors hover:bg-cyan-100"
+                                        >
+                                            Visit the new site <ExternalLinkIcon size={17} />
+                                        </motion.a>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div key="countdown" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-bold tracking-[0.24em] text-violet-100 shadow-lg shadow-violet-950/20">
+                                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
+                                            ???
+                                        </div>
+                                        <h2 className="mb-9 text-3xl font-bold tracking-tight text-white sm:text-5xl">Something new is almost here..</h2>
+                                        <div className="flex items-start justify-center gap-1.5 sm:gap-4">
+                                            <CountdownUnit value={days} label="Days" />
+                                            <span className="pt-4 text-xl font-bold text-violet-300/40 sm:pt-6 sm:text-3xl">:</span>
+                                            <CountdownUnit value={hours} label="Hours" />
+                                            <span className="pt-4 text-xl font-bold text-violet-300/40 sm:pt-6 sm:text-3xl">:</span>
+                                            <CountdownUnit value={minutes} label="Minutes" />
+                                            <span className="pt-4 text-xl font-bold text-violet-300/40 sm:pt-6 sm:text-3xl">:</span>
+                                            <CountdownUnit value={seconds} label="Seconds" />
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </motion.section>
+                </>
+            );
+        }
+
         function App() {
             const [allGames, setAllGames] = useState([]);
             const [groups, setGroups] = useState([]);
@@ -386,6 +561,8 @@
                     <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
                     <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
+
+                        <CountdownBanner />
                         
                         {/* Hero Header */}
                         <motion.div 
