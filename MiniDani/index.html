@@ -31,7 +31,7 @@
     <main>
       <div class="pane-title document-tab">Overview</div>
       <div class="page-content">
-    <header class="viewport">
+    <header class="viewport minidani-viewport">
       <div class="viewport-copy">
         <h1>MiniDani</h1>
         <p>Find missing asset references, reuse previous replacements, and manage uploads from Roblox Studio with a companion that runs on your computer.</p>
@@ -39,13 +39,22 @@
       </div>
       <div class="viewport-art" aria-hidden="true">
         <div class="floor"></div>
-        <div class="selection"><img src="../assets/minidani.png" alt="" width="128" height="128"></div>
+        <div class="plugin-preview">
+          <div class="preview-title"><img src="../assets/minidani.png" alt="" width="18" height="18"> MiniDani</div>
+          <div class="preview-tabs"><span>Spoof</span><strong>Missing</strong><span>Assets</span></div>
+          <div class="preview-body">
+            <strong>Missing assets</strong>
+            <div class="preview-row"><img src="../assets/icons/box.svg" width="16" height="16" alt=""> Door mesh <small>Mesh</small></div>
+            <div class="preview-row"><img src="../assets/icons/file-code.svg" width="16" height="16" alt=""> Idle <small>Animation</small></div>
+            <span class="preview-action">Spoof all</span>
+          </div>
+        </div>
       </div>
     </header>
-    <div class="actions">
+    <nav class="actions project-docs" aria-label="Project documents">
       <a class="button" href="terms/index.html">Terms of Service</a>
       <a class="button" href="privacy/index.html">Privacy Policy</a>
-    </div>
+    </nav>
     <section id="workflow" class="workflow">
       <h2>Asset workflow</h2>
       <div class="editor">
