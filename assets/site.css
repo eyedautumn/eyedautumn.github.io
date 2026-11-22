@@ -53,7 +53,6 @@ body { background: #141518; }
 .pane-title { padding: .55rem .9rem; background: #24262d; border-bottom: 1px solid var(--edge); color: #d6d9e2; font-size: .78rem; font-weight: 650; }
 .explorer nav { width: auto; display: grid; gap: .2rem; margin: .6rem; }
 .explorer nav a { padding: .42rem .55rem; border-radius: .25rem; display: flex; gap: .65rem; align-items: center; font-size: .86rem; }
-.explorer nav a span { color: #a8bdff; width: 1rem; text-align: center; }
 .explorer nav a:hover { background: #292d37; }
 .explorer nav a[aria-current] { background: #263957; box-shadow: inset 2px 0 #7fa6ff; }
 main { width: auto; min-width: 0; margin: 0; padding: 0; }
@@ -70,9 +69,6 @@ main { width: auto; min-width: 0; margin: 0; padding: 0; }
 .button.primary { background: #345cd5; border-color: #6788ec; }
 .button.primary:hover { background: #4269df; }
 .workflow { margin-bottom: 1.5rem; scroll-margin-top: 1rem; }
-.workflow-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .7rem; }
-.workflow-grid h3 { font-size: 1rem; margin: 0 0 .35rem; }
-.workflow-grid p { font-size: .9rem; }
 .document { margin-inline: auto; }
 footer { width: min(100% - 2rem, 91rem); }
 @media (max-width: 850px) {
@@ -85,5 +81,14 @@ footer { width: min(100% - 2rem, 91rem); }
   .viewport { grid-template-columns: 1fr; }
   .viewport-art { min-height: 10rem; grid-row: 1; }
   .selection { width: 6rem; }
-  .workflow-grid { grid-template-columns: 1fr; }
 }
+
+.explorer nav a img { flex: 0 0 1rem; }
+.editor { border: 1px solid var(--edge); border-radius: .4rem; overflow: hidden; background: #202126; }
+.editor-tab { display: flex; align-items: center; gap: .5rem; padding: .55rem .8rem; background: #292b33; border-bottom: 1px solid var(--edge); color: #cad6f1; font: .8rem ui-monospace, monospace; }
+.editor-lines { counter-reset: editor-line; list-style: none; margin: 0; padding: .5rem 0; font-family: ui-monospace, monospace; background: linear-gradient(90deg, #262830 2.65rem, transparent 2.65rem); }
+.editor-lines li { counter-increment: editor-line; position: relative; padding: .6rem .9rem .6rem 3.35rem; }
+.editor-lines li::before { content: counter(editor-line, decimal-leading-zero); position: absolute; left: .7rem; color: #b2b5c2; font-size: .8rem; }
+.editor-lines li:hover { background: #ffffff08; }
+.editor-lines h3 { color: #98b8ff; font-size: .9rem; margin: 0; }
+.editor-lines p { color: #c5cbba; font-size: .82rem; margin: .15rem 0 0; }
