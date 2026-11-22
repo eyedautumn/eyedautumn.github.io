@@ -35,12 +35,21 @@
         <article class="document panel">
           <header>
             <h1>Download MiniDani</h1>
-            <p>The Python installer will download the Studio plugin and desktop companion from MiniDani’s GitHub release and guide you through setup.</p>
+            <p>The GitHub release ZIP will include the Studio plugin, desktop companion, and setup scripts.</p>
           </header>
           <section aria-labelledby="installer">
             <h2 id="installer">Python installer</h2>
             <p id="release-status">The installer will be available when the first GitHub release is published.</p>
-            <button class="button" type="button" disabled aria-describedby="release-status">Download installer</button>
+            <button class="button" type="button" disabled aria-describedby="release-status">Download release ZIP</button>
+          </section>
+          <section>
+            <h2>Set up MiniDani</h2>
+            <ol>
+              <li>Extract the release ZIP.</li>
+              <li>Run <code>sh install.sh</code> on Linux or macOS, or <code>py -3 install.py</code> in Windows PowerShell.</li>
+              <li>Drag the installed <code>MiniDani.rbxmx</code> into a blank Studio place. Right-click the MiniDani folder in Explorer and choose <strong>Save as Local Plugin</strong>.</li>
+              <li>Open MiniDani from the Plugins toolbar, connect the companion, and sign in with Roblox.</li>
+            </ol>
           </section>
         </article>
       </div>
