@@ -20,9 +20,9 @@
               <summary>MiniDani</summary>
               <div class="tree-children">
                 <a href="../MiniDani/index.html" aria-current="page"><img src="../assets/icons/box.svg" width="16" height="16" alt="">Overview</a>
+                <a href="../MiniDani/download/index.html"><img src="../assets/icons/box.svg" width="16" height="16" alt="">Download</a>
                 <a href="../MiniDani/terms/index.html"><img src="../assets/icons/file-code.svg" width="16" height="16" alt="">Terms of Service</a>
                 <a href="../MiniDani/privacy/index.html"><img src="../assets/icons/file-lock.svg" width="16" height="16" alt="">Privacy Policy</a>
-                <a href="../MiniDani/download/index.html"><img src="../assets/icons/box.svg" width="16" height="16" alt="">Download</a>
               </div>
             </details>
           </div>
@@ -36,7 +36,11 @@
       <div class="viewport-copy">
         <h1>MiniDani</h1>
         <p>Find missing asset references, reuse previous replacements, and manage uploads from Roblox Studio with a companion that runs on your computer.</p>
-        <a class="button primary" href="#workflow">Explore the workflow <span aria-hidden="true">↓</span></a>
+        <div class="overview-actions">
+          <a class="button primary" href="download/index.html">Installer and setup <span aria-hidden="true">→</span></a>
+          <a href="#workflow">Explore the workflow</a>
+        </div>
+        <p class="release-note">Installer pending the first GitHub release.</p>
       </div>
       <div class="viewport-art" aria-hidden="true">
         <div class="floor"></div>
@@ -52,8 +56,15 @@
         </div>
       </div>
     </header>
+    <section class="panel setup-summary" aria-labelledby="setup-heading">
+      <h2 id="setup-heading">How installation will work</h2>
+      <ol>
+        <li>Download and run the Python installer.</li>
+        <li>Follow its prompts to set up the Studio plugin and desktop companion.</li>
+        <li>Open MiniDani in Studio and choose <strong>Sign in with Roblox</strong>.</li>
+      </ol>
+    </section>
     <nav class="actions project-docs" aria-label="Project documents">
-      <a class="button primary" href="download/index.html">Download</a>
       <a class="button" href="terms/index.html">Terms of Service</a>
       <a class="button" href="privacy/index.html">Privacy Policy</a>
     </nav>
