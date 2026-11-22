@@ -159,3 +159,5 @@ footer { width: min(100% - 2rem, 91rem); }
   .document-layout { grid-template-columns: 1fr; }
   .outline { position: static; grid-row: 1; }
 }
+
+.review-video { display: block; width: 100%; margin-top: 1.25rem; border-radius: .4rem; background: #101114; }
