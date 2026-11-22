@@ -92,3 +92,44 @@ footer { width: min(100% - 2rem, 91rem); }
 .editor-lines li:hover { background: #ffffff08; }
 .editor-lines h3 { color: #98b8ff; font-size: .9rem; margin: 0; }
 .editor-lines p { color: #c5cbba; font-size: .82rem; margin: .15rem 0 0; }
+
+.explorer nav { display: block; }
+.explorer summary {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .35rem .4rem;
+  border-radius: .25rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: .86rem;
+}
+.explorer summary::-webkit-details-marker { display: none; }
+.explorer summary::before {
+  content: "";
+  width: .38rem;
+  height: .38rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+.explorer details[open] > summary::before { transform: rotate(45deg); }
+.explorer summary:hover { background: #292d37; }
+.explorer summary:focus-visible { outline: 2px solid var(--blue); }
+.tree-children { padding-left: .9rem; margin-left: .6rem; }
+.tree-children > * { position: relative; }
+.tree-children > *::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -.9rem;
+  border-left: 1px solid #525767;
+}
+.tree-children > :last-child::before { bottom: auto; height: 1.05rem; }
+.tree-children > *::after {
+  content: "";
+  position: absolute;
+  left: -.9rem;
+  top: 1.05rem;
+  width: .7rem;
+  border-top: 1px solid #525767;
+}
